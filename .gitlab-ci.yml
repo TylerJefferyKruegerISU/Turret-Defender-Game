@@ -1,0 +1,59 @@
+stages:
+  - test
+  - deploy
+  - androidbuild
+  - androidtest
+  
+test:
+  stage: test
+  tags:
+    - shell
+  script:
+    - cd BackEnd/ServerServices
+    - chmod 777 *
+    - ./mvnw test
+
+deploy:
+  stage: deploy
+  tags:
+    - shell
+  only:
+    - master
+  script:
+    - cd BackEnd/ServerServices
+    - chmod 777 *
+    - ./mvnw package
+    - sudo rm -f /home/SS_5/database-access.jar
+    - sudo mv target/*SNAPSHOT.jar /home/SS_5/database-access.jar
+    - sudo systemctl stop ss-5
+    - sudo systemctl start ss-5
+
+
+
+android-build:
+    image: javiersantos/android-ci:latest
+    stage: androidbuild
+    before_script:
+    - export GRADLE_USER_HOME='pwd'/.gradle
+    - chmod +x ./FrontEnd/gradlew
+    tags:
+    - android_tag1
+    script:
+    - cd FrontEnd
+    - ./gradlew assemble
+    artifacts:
+      paths:
+      - FrontEnd/app/build/outputs/
+      
+
+unitTests:
+    image: javiersantos/android-ci:latest
+    stage: androidtest
+    before_script:
+    - export GRADLE_USER_HOME='pwd'/.gradle
+    - chmod +x ./FrontEnd/gradlew
+    tags:
+    - android_tag1
+    script:
+    - cd FrontEnd
+    - ./gradlew test
